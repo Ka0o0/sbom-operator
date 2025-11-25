@@ -122,9 +122,9 @@ not present in the cluster anymore are removed from the configured targets (exce
 | `dtrack-base-url` | `true` when `dtrack` target is used | `""` | Dependency-Track base URL, e.g. 'https://dtrack.example.com' |
 | `dtrack-api-key` | `true` when `dtrack` target is used | `""` | Dependency-Track API key |
 | `dtrack-label-tag-matcher` | `false` | `""` | Dependency-Track Pod-Label-Tag matcher regex |
-| `dtrack-ca-cert-file` | `false` | `""` | CA-Certificate filepath when using mTLS to connect to dtrack |
-| `dtrack-client-cert-file` | `true` when `dtrack-ca-cert-file` is provided | `""` | Client-Certificate filepath when using mTLS to connect to dtrack |
-| `dtrack-client-key-file` | `true` when `dtrack-ca-cert-file` is provided | `""` | Client-Key filepath when using mTLS to connect to dtrack |
+| `dtrack-client-key-file` | `true` when `dtrack-client-cert-file` is provided | `""` | Client-Key filepath when using mTLS to connect to dtrack |
+| `dtrack-client-cert-file` | `false` | `""` | Client-Certificate filepath when using mTLS to connect to dtrack |
+| `dtrack-ca-cert-file` | `true` when mTLS is used (`dtrack-client-cert-file` and `dtrack-client-key-file` are set)  | `""` | Custom CA-Certificate when verifying the server certificate. It is required if `dtrack-client-cert-file` and `dtrack-client-key-file` are specified for mTLS |
 | `dtrack-parent-project-annotation-key` | `false` | `""` | Kubernetes pod annotation key to set parent project automatically, e.g. "my.pod.annotation" |
 | `dtrack-project-name-annotation-key` | `false` | `""` | Kubernetes pod annotation key to set custom dtrack project name automatically, e.g. "my.pod.annotation" |
 | `kubernetes-cluster-id` | `false` | `"default"` | Kubernetes Cluster ID (to be used in Dependency-Track or Job-Images) |

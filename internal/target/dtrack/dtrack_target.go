@@ -2,7 +2,11 @@ package dtrack
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
+	"net/http"
+	"os"
 	"regexp"
 	"strings"
 
@@ -59,19 +63,19 @@ func (g *DependencyTrackTarget) ValidateConfig() error {
 	if g.apiKey == "" {
 		return fmt.Errorf("%s is empty", internal.ConfigKeyDependencyTrackApiKey)
 	}
-	if g.caCertFile != "" {
-		if g.clientCertFile == "" {
+	if g.clientCertFile != "" {
+		if g.caCertFile == "" {
 			return fmt.Errorf(
 				"%s provided but %s is empty",
-				internal.ConfigKeyDependencyTrackCaCertFile,
 				internal.ConfigKeyDependencyTrackClientCertFile,
+				internal.ConfigKeyDependencyTrackCaCertFile,
 			)
 		}
 
 		if g.clientKeyFile == "" {
 			return fmt.Errorf(
 				"%s provided but %s is empty",
-				internal.ConfigKeyDependencyTrackCaCertFile,
+				internal.ConfigKeyDependencyTrackClientCertFile,
 				internal.ConfigKeyDependencyTrackClientKeyFile,
 			)
 		}
@@ -85,8 +89,36 @@ func (g *DependencyTrackTarget) Initialize() error {
 
 	g.clientOptions = append(g.clientOptions, dtrack.WithAPIKey(g.apiKey))
 
-	if len(g.caCertFile) > 0 {
+	if len(g.clientCertFile) > 0 {
 		g.clientOptions = append(g.clientOptions, dtrack.WithMTLS(g.caCertFile, g.clientCertFile, g.clientKeyFile))
+	} else if len(g.caCertFile) > 0 {
+		caCertData, err := os.ReadFile(g.caCertFile)
+		if err != nil {
+			return fmt.Errorf("failed to read CA certificate: %w", err)
+		}
+
+		certPool, err := x509.SystemCertPool()
+		if err != nil {
+			return fmt.Errorf("failed to load system cert pool: %w", err)
+		}
+		if certPool == nil {
+			certPool = x509.NewCertPool()
+		}
+		if ok := certPool.AppendCertsFromPEM(caCertData); !ok {
+			return fmt.Errorf("failed to append CA certificate from %s", g.caCertFile)
+		}
+
+		baseTransport, ok := http.DefaultTransport.(*http.Transport)
+		if !ok {
+			return fmt.Errorf("unexpected default transport type %T", http.DefaultTransport)
+		}
+		transport := baseTransport.Clone()
+		if transport.TLSClientConfig == nil {
+			transport.TLSClientConfig = &tls.Config{}
+		}
+		transport.TLSClientConfig.RootCAs = certPool
+
+		g.clientOptions = append(g.clientOptions, dtrack.WithHttpClient(&http.Client{Transport: transport}))
 	}
 
 	return nil
